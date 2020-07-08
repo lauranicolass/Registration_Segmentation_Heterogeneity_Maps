@@ -8,7 +8,7 @@ Please, if you use this repository, cite it as:
 ```
 @misc{ 
 title = {lauranicolass/Registration_Segmentation_Heterogeneity_Maps},
-author = {Nicolás Sáenz, Muñoz Barrutia, Arrate}, 
+author = {Nicolás Sáenz, Laura, Muñoz Barrutia, Arrate}, 
 doi = {10.5281/zenodo.3935310}, 
 howpublished = "\url{https://github.com/lauranicolass/Registration_Segmentation_Heterogeneity_Maps}",
 month = {July}, 
