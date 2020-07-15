@@ -1,0 +1,451 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>github_talign_tglobal</title><meta name="generator" content="MATLAB 9.8"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-07-15"><meta name="DC.source" content="github_talign_tglobal.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; }
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+span.typesection { color:#A0522D }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">create saving folder for results</a></li><li><a href="#3">load images</a></li><li><a href="#4">scaling of images</a></li><li><a href="#5">first rough segmentation</a></li><li><a href="#6">rough segmentation</a></li><li><a href="#8">save white segmented blobs (optional):</a></li><li><a href="#9">uncomment for plots</a></li><li><a href="#10">biopsy rotation (pre-alignment)</a></li><li><a href="#11">Find best rotation angle</a></li><li><a href="#12">rotate each image (mask and original)</a></li><li><a href="#14">Global registration:</a></li><li><a href="#15">save the registered images:</a></li><li><a href="#16">save the structure</a></li></ul></div><pre class="codeinput">clear;clc;close <span class="string">all</span>
+mainf=uigetdir; <span class="comment">%folder with images (example images included)</span>
+filesm=dir(mainf);
+filesm=filesm(3:length(filesm));<span class="comment">%remove '.' and '..' directories</span>
+<span class="comment">% remove folders with previous results:</span>
+dirFlags = [filesm.isdir];
+dirFlags=logical(abs(dirFlags-1));
+<span class="comment">% Extract only those that are directories.</span>
+filesm= filesm(dirFlags);
+
+
+
+scaling_factor=1; <span class="comment">%decrease for higher computational speed</span>
+</pre><h2 id="2">create saving folder for results</h2><pre class="codeinput">    folder=mainf;
+    t = datetime(<span class="string">'now'</span>);
+    DateString = datestr(t);
+    DateString2=strrep(DateString,<span class="string">' '</span>,<span class="string">'_'</span>);
+    DateString2=strrep(DateString2,<span class="string">'-'</span>,<span class="string">''</span>);
+    DateString2=strrep(DateString2,<span class="string">':'</span>,<span class="string">''</span>);
+    foldersave=fullfile(mainf,strcat(<span class="string">'Results'</span>,DateString2));
+    mkdir(foldersave);
+</pre><h2 id="3">load images</h2><pre class="codeinput">    <span class="keyword">for</span> im=1:length(filesm)
+        fullFileName = fullfile(filesm(im).folder, filesm(im).name);
+        im_original =(imread(fullFileName));
+        images(im).name=filesm(im).name;
+        images(im).or_image=im_original;
+    <span class="keyword">end</span>
+
+
+    <span class="comment">% once we have the images ordered , we select the first image as reference:</span>
+</pre><h2 id="4">scaling of images</h2><pre class="codeinput">    <span class="keyword">for</span> p=1:length(images)
+
+        <span class="comment">%%scaling of the images</span>
+        im_original=images(p).or_image;
+        [H,W]=size(im_original);
+
+        im= imresize(im_original,scaling_factor);
+        images(p).or_image_resized=im;
+
+    <span class="keyword">end</span>
+</pre><h2 id="5">first rough segmentation</h2><pre class="codeinput">    <span class="keyword">for</span> p=1:length(images)
+</pre><h2 id="6">rough segmentation</h2><pre class="codeinput">        hsvImage = rgb2hsv(images(p).or_image_resized); <span class="comment">%get the hue saturation and value subimages</span>
+        vImage = hsvImage(:,:,3);
+        thresh = multithresh(vImage,9); <span class="comment">%find the optimal treshold from the value image</span>
+        seg_I = imquantize(vImage,thresh(8));
+        mask=seg_I==1;  <span class="comment">%get the actual mask</span>
+        se =strel(<span class="string">'disk'</span>,5);
+        dilatedI = imdilate(mask,se);
+        <span class="comment">% imshowpair(mask,dilatedI,'montage')</span>
+        BW2 = imfill(dilatedI,<span class="string">'holes'</span>);
+        CC= bwconncomp(BW2);
+        BW=zeros(size(BW2));
+        numPixels = cellfun(@numel,CC.PixelIdxList); [biggest,idx] = max(numPixels); BW(CC.PixelIdxList{idx}) = 1;
+        <span class="comment">%figure;imshow(BW);</span>
+        binaryImage=BW;
+        area0=sum(BW(:));
+        [H1, W1]=size(BW);
+        ratioarea= area0/(H1*W1);
+
+        <span class="keyword">if</span> ratioarea&lt;0.15
+            hsvImage = rgb2hsv(images(p).or_image_resized); <span class="comment">%get the hue saturation and value subimages</span>
+            vImage = hsvImage(:,:,3);
+
+            thresh = multithresh(vImage,9); <span class="comment">%find the optimal treshold from the value image</span>
+            seg_I = imquantize(vImage,thresh(9));
+            mask=seg_I==1;  <span class="comment">%get the actual mask</span>
+            se =strel(<span class="string">'disk'</span>,1);
+            dilatedI = imdilate(mask,se);
+<span class="comment">%             imshowpair(mask,dilatedI,'montage')</span>
+            BW2 = imfill(dilatedI,<span class="string">'holes'</span>);
+            CC= bwconncomp(BW2);
+            BW=zeros(size(BW2));
+            numPixels = cellfun(@numel,CC.PixelIdxList); [biggest,idx] = max(numPixels); BW(CC.PixelIdxList{idx}) = 1;
+<span class="comment">%             figure;imshow(BW);</span>
+            binaryImage=BW;
+
+        <span class="keyword">end</span>
+
+        windowSize = 15;
+        kernel = ones(windowSize) / windowSize ^ 2;
+        blurryImage = conv2(single(binaryImage), kernel, <span class="string">'same'</span>);
+        binaryImage = blurryImage &gt; 0.5; <span class="comment">% Rethreshold</span>
+        <span class="comment">%figure;imshow(binaryImage);</span>
+        BW3 = imfill(binaryImage,<span class="string">'holes'</span>);
+        <span class="comment">%figure;imshow(BW3);</span>
+        images(p).im_binary_mask=BW3;
+</pre><pre class="codeinput">    <span class="keyword">end</span>
+
+
+    <span class="comment">% select the first image as reference:</span>
+    or_image0=images(1).im_binary_mask;
+</pre><h2 id="8">save white segmented blobs (optional):</h2><pre class="codeinput">    <span class="keyword">for</span> p=1:length(images)
+        imwrite(images(p).im_binary_mask, fullfile(foldersave,strcat(erase(images(p).name,<span class="string">'.jpg'</span>),<span class="string">'_whiteblob.tif'</span>)));
+    <span class="keyword">end</span>
+</pre><h2 id="9">uncomment for plots</h2><pre class="codeinput">    figure;
+    subplot(2,2,1);imshow(images(1).or_image_resized);
+    subplot(2,2,2);imshow(images(1).im_binary_mask);
+    subplot(2,2,3);imshow(images(2).or_image_resized);
+    subplot(2,2,4);imshow(images(2).im_binary_mask);
+<span class="comment">%</span>
+</pre><img vspace="5" hspace="5" src="github_talign_tglobal_01.png" alt=""> <h2 id="10">biopsy rotation (pre-alignment)</h2><pre class="codeinput">    im_original=or_image0;
+    i1=images(1).or_image_resized;
+
+    <span class="keyword">for</span> p=2:length(images)
+</pre><h2 id="11">Find best rotation angle</h2><pre class="codeinput">        im2 =images(p).im_binary_mask;
+        rotacion = funperrota(im_original, im2);
+        correlation = [rotacion.correlation].';
+        absdiff = [rotacion.absdiff].';
+        [a,b]=max(correlation(:));
+        angle(p)=rotacion(b).angle;
+</pre><h2 id="12">rotate each image (mask and original)</h2><pre class="codeinput">        i2=images(p).or_image_resized;
+
+            [i3new,i4new,i1new,i2new,dispvector] = rotation_nol_octubre(im_original, im2,i1,i2,rotacion(b).angle);
+            images(1).im_binary_mask_rotated=i3new;
+            images(1).or_image_resized_rotated=i1new;
+            images(p).or_image_resized_rotated=i2new;
+            images(1).white_blob_rotated=i3new;
+            images(p).white_blob_rotated=i4new;
+            images(p).im_binary_mask_rotated=i2new;
+
+
+        imwrite(i4new, fullfile(foldersave,strcat(erase(images(p).name,<span class="string">'.jpg'</span>),<span class="string">'_whiteblob_rotated.tif'</span>)));
+        imwrite(i2new, fullfile(foldersave,strcat(erase(images(p).name,<span class="string">'.jpg'</span>),<span class="string">'_im_rotated.tif'</span>)));
+</pre><pre class="codeinput">    <span class="keyword">end</span>
+
+
+    close <span class="string">all</span>;
+</pre><h2 id="14">Global registration:</h2><pre class="codeinput">    FIXED=double(images(1).white_blob_rotated);
+
+    <span class="keyword">for</span> p=2:length(images)
+        MOVING=double(images(p).white_blob_rotated);
+        or_im=images(p).or_image_resized_rotated;
+
+
+
+            [MOVINGREG,tform,im2] =  registerImagesLaura_nol(MOVING,FIXED,or_im);
+            images(p).MOVINGREG=MOVINGREG;
+            images(p).MOVINGREG_blob_registrated=logical(MOVINGREG.RegisteredImage);
+            images(p).MOVINGREG_image=im2;
+            images(1).MOVINGREG_blob_registrated=FIXED;
+            images(1).MOVINGREG_image=images(1).or_image_resized_rotated;
+
+
+
+    <span class="keyword">end</span>
+
+figure;
+subplot(2,length(images),1);imshow(images(1).or_image_resized);
+    <span class="keyword">for</span> p=2:length(images)
+        subplot(2,length(images),p);imshow(images(p).or_image_resized)
+
+    <span class="keyword">end</span>
+
+
+
+
+subplot(2,length(images),length(images)+1);imshow(images(1).MOVINGREG_image);
+    <span class="keyword">for</span> p=2:length(images)
+        subplot(2,length(images),length(images)+p);imshow(images(p).MOVINGREG_image)
+
+    <span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="github_talign_tglobal_02.png" alt=""> <h2 id="15">save the registered images:</h2><pre class="codeinput">    <span class="keyword">for</span> p=1:length(images)
+        image=images(p).MOVINGREG_image;
+        baseFileName=strcat(<span class="string">'rotated_registered_'</span>,images(p).name);
+        folder2=foldersave;
+        fullFileName = fullfile(folder2, baseFileName);
+        imwrite(image, fullFileName);
+    <span class="keyword">end</span>
+</pre><h2 id="16">save the structure</h2><pre class="codeinput">        save(fullfile(folder2, <span class="string">'imagesregistrobueno.mat'</span>), <span class="string">'images'</span>);
+        <span class="comment">%clearvars -except filesm bio_folder</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2020a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+clear;clc;close all
+mainf=uigetdir; %folder with images (example images included)
+filesm=dir(mainf);
+filesm=filesm(3:length(filesm));%remove '.' and '..' directories
+% remove folders with previous results:
+dirFlags = [filesm.isdir];
+dirFlags=logical(abs(dirFlags-1));
+% Extract only those that are directories.
+filesm= filesm(dirFlags);
+
+
+
+scaling_factor=1; %decrease for higher computational speed
+    %% create saving folder for results
+    folder=mainf;
+    t = datetime('now');
+    DateString = datestr(t);
+    DateString2=strrep(DateString,' ','_');
+    DateString2=strrep(DateString2,'-','');
+    DateString2=strrep(DateString2,':','');
+    foldersave=fullfile(mainf,strcat('Results',DateString2));
+    mkdir(foldersave);
+   
+    
+    %% load images
+  
+    
+    for im=1:length(filesm)
+        fullFileName = fullfile(filesm(im).folder, filesm(im).name);
+        im_original =(imread(fullFileName));
+        images(im).name=filesm(im).name;
+        images(im).or_image=im_original;
+    end
+    
+    
+    % once we have the images ordered , we select the first image as reference:
+    
+    
+   %% scaling of images
+    for p=1:length(images)
+        
+        %%scaling of the images
+        im_original=images(p).or_image;
+        [H,W]=size(im_original);
+        
+        im= imresize(im_original,scaling_factor);
+        images(p).or_image_resized=im;
+        
+    end
+    
+    %% first rough segmentation
+    for p=1:length(images)
+        %% rough segmentation
+        hsvImage = rgb2hsv(images(p).or_image_resized); %get the hue saturation and value subimages
+        vImage = hsvImage(:,:,3);
+        thresh = multithresh(vImage,9); %find the optimal treshold from the value image
+        seg_I = imquantize(vImage,thresh(8));
+        mask=seg_I==1;  %get the actual mask
+        se =strel('disk',5);
+        dilatedI = imdilate(mask,se);
+        % imshowpair(mask,dilatedI,'montage')
+        BW2 = imfill(dilatedI,'holes');
+        CC= bwconncomp(BW2);
+        BW=zeros(size(BW2));
+        numPixels = cellfun(@numel,CC.PixelIdxList); [biggest,idx] = max(numPixels); BW(CC.PixelIdxList{idx}) = 1;
+        %figure;imshow(BW);
+        binaryImage=BW;
+        area0=sum(BW(:));
+        [H1, W1]=size(BW);
+        ratioarea= area0/(H1*W1);
+        
+        if ratioarea<0.15
+            hsvImage = rgb2hsv(images(p).or_image_resized); %get the hue saturation and value subimages
+            vImage = hsvImage(:,:,3);
+            
+            thresh = multithresh(vImage,9); %find the optimal treshold from the value image
+            seg_I = imquantize(vImage,thresh(9));
+            mask=seg_I==1;  %get the actual mask
+            se =strel('disk',1);
+            dilatedI = imdilate(mask,se);
+%             imshowpair(mask,dilatedI,'montage')
+            BW2 = imfill(dilatedI,'holes');
+            CC= bwconncomp(BW2);
+            BW=zeros(size(BW2));
+            numPixels = cellfun(@numel,CC.PixelIdxList); [biggest,idx] = max(numPixels); BW(CC.PixelIdxList{idx}) = 1;
+%             figure;imshow(BW);
+            binaryImage=BW;
+  
+        end
+  
+        windowSize = 15;
+        kernel = ones(windowSize) / windowSize ^ 2;
+        blurryImage = conv2(single(binaryImage), kernel, 'same');
+        binaryImage = blurryImage > 0.5; % Rethreshold
+        %figure;imshow(binaryImage);
+        BW3 = imfill(binaryImage,'holes');
+        %figure;imshow(BW3);
+        images(p).im_binary_mask=BW3;
+    end
+    
+    
+    % select the first image as reference:
+    or_image0=images(1).im_binary_mask;
+    
+    
+    
+   
+    %% save white segmented blobs (optional):
+    for p=1:length(images)
+        imwrite(images(p).im_binary_mask, fullfile(foldersave,strcat(erase(images(p).name,'.jpg'),'_whiteblob.tif')));
+    end
+    
+    %% uncomment for plots
+%     
+%    
+    
+    figure;
+    subplot(2,2,1);imshow(images(1).or_image_resized);
+    subplot(2,2,2);imshow(images(1).im_binary_mask);
+    subplot(2,2,3);imshow(images(2).or_image_resized);
+    subplot(2,2,4);imshow(images(2).im_binary_mask);
+%     
+    
+    
+    
+    %% biopsy rotation (pre-alignment)
+    im_original=or_image0;
+    i1=images(1).or_image_resized;
+
+    for p=2:length(images)
+        %% Find best rotation angle
+        
+        im2 =images(p).im_binary_mask;
+        rotacion = funperrota(im_original, im2);
+        correlation = [rotacion.correlation].';
+        absdiff = [rotacion.absdiff].';
+        [a,b]=max(correlation(:));
+        angle(p)=rotacion(b).angle;
+        
+        %% rotate each image (mask and original)
+        i2=images(p).or_image_resized;
+        
+            [i3new,i4new,i1new,i2new,dispvector] = rotation_nol_octubre(im_original, im2,i1,i2,rotacion(b).angle);
+            images(1).im_binary_mask_rotated=i3new;
+            images(1).or_image_resized_rotated=i1new;
+            images(p).or_image_resized_rotated=i2new;
+            images(1).white_blob_rotated=i3new;
+            images(p).white_blob_rotated=i4new;
+            images(p).im_binary_mask_rotated=i2new;
+
+        
+        imwrite(i4new, fullfile(foldersave,strcat(erase(images(p).name,'.jpg'),'_whiteblob_rotated.tif')));
+        imwrite(i2new, fullfile(foldersave,strcat(erase(images(p).name,'.jpg'),'_im_rotated.tif')));
+    end
+    
+    
+    close all;
+    
+    %% Global registration:
+    FIXED=double(images(1).white_blob_rotated);
+   
+    for p=2:length(images)
+        MOVING=double(images(p).white_blob_rotated);
+        or_im=images(p).or_image_resized_rotated;
+        
+        
+        
+            [MOVINGREG,tform,im2] =  registerImagesLaura_nol(MOVING,FIXED,or_im);
+            images(p).MOVINGREG=MOVINGREG;
+            images(p).MOVINGREG_blob_registrated=logical(MOVINGREG.RegisteredImage);
+            images(p).MOVINGREG_image=im2;
+            images(1).MOVINGREG_blob_registrated=FIXED;
+            images(1).MOVINGREG_image=images(1).or_image_resized_rotated;
+            
+        
+  
+    end
+
+figure;
+subplot(2,length(images),1);imshow(images(1).or_image_resized);
+    for p=2:length(images)
+        subplot(2,length(images),p);imshow(images(p).or_image_resized)
+        
+    end
+
+
+
+
+subplot(2,length(images),length(images)+1);imshow(images(1).MOVINGREG_image);
+    for p=2:length(images)
+        subplot(2,length(images),length(images)+p);imshow(images(p).MOVINGREG_image)
+        
+    end
+    
+   %% save the registered images: 
+    for p=1:length(images)
+        image=images(p).MOVINGREG_image;
+        baseFileName=strcat('rotated_registered_',images(p).name);
+        folder2=foldersave;
+        fullFileName = fullfile(folder2, baseFileName);
+        imwrite(image, fullFileName);
+    end
+    %% save the structure
+        save(fullfile(folder2, 'imagesregistrobueno.mat'), 'images');  
+        %clearvars -except filesm bio_folder
+
+
+
+##### SOURCE END #####
+--></body></html>
